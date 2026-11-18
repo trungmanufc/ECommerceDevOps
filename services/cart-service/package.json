@@ -1,0 +1,18 @@
+{
+  "name": "cart-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shopping cart API for the e-commerce shop",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "redis": "^4.7.0"
+  }
+}

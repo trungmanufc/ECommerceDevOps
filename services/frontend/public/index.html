@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Microshop</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>Microshop</h1>
+    <span id="user" class="muted"></span>
+  </header>
+
+  <p id="message" role="status" hidden></p>
+
+  <main>
+    <section>
+      <h2>Products</h2>
+      <div id="products" class="grid"></div>
+    </section>
+
+    <aside>
+      <section class="panel">
+        <h2>Cart</h2>
+        <ul id="cart" class="list"></ul>
+        <div class="total">
+          <span>Total</span>
+          <strong id="cart-total">$0.00</strong>
+        </div>
+        <button id="checkout" class="primary" disabled>Checkout</button>
+      </section>
+
+      <section class="panel">
+        <h2>Orders</h2>
+        <ul id="orders" class="list"></ul>
+      </section>
+    </aside>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

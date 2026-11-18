@@ -1,0 +1,74 @@
+# Runs the whole shop on one machine:  docker compose up --build
+# Then open http://localhost:8080
+name: ecommerce-shop
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: shop
+      POSTGRES_USER: shop
+      POSTGRES_PASSWORD: shop-local-password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shop -d shop"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  product-service:
+    build: ./services/product-service
+    image: ecommerce-shop/product-service:local
+    environment:
+      PGHOST: postgres
+      PGDATABASE: shop
+      PGUSER: shop
+      PGPASSWORD: shop-local-password
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  cart-service:
+    build: ./services/cart-service
+    image: ecommerce-shop/cart-service:local
+    environment:
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  order-service:
+    build: ./services/order-service
+    image: ecommerce-shop/order-service:local
+    environment:
+      PGHOST: postgres
+      PGDATABASE: shop
+      PGUSER: shop
+      PGPASSWORD: shop-local-password
+      CART_SERVICE_URL: http://cart-service:3000
+      PRODUCT_SERVICE_URL: http://product-service:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build: ./services/frontend
+    image: ecommerce-shop/frontend:local
+    ports:
+      - "8080:80"
+    depends_on:
+      - product-service
+      - cart-service
+      - order-service
+
+volumes:
+  postgres-data:

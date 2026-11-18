@@ -1,0 +1,34 @@
+# Deploy everything:   kubectl apply -k k8s
+# Remove everything:   kubectl delete -k k8s
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Every resource below is created in this namespace.
+namespace: shop
+
+resources:
+  - namespace.yaml
+  - config.yaml
+  - postgres.yaml
+  - redis.yaml
+  - product-service.yaml
+  - cart-service.yaml
+  - order-service.yaml
+  - frontend.yaml
+
+# The manifests use short image names. This block maps them to real images.
+# Locally these are the images built by "docker compose build"; the CD
+# pipeline will later point them at the images pushed by GitHub Actions.
+images:
+  - name: product-service
+    newName: ecommerce-shop/product-service
+    newTag: local
+  - name: cart-service
+    newName: ecommerce-shop/cart-service
+    newTag: local
+  - name: order-service
+    newName: ecommerce-shop/order-service
+    newTag: local
+  - name: frontend
+    newName: ecommerce-shop/frontend
+    newTag: local

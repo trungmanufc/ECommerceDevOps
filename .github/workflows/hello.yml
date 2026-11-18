@@ -1,0 +1,34 @@
+# A practice workflow for learning GitHub Actions. Safe to edit, break and
+# delete: it does not affect the shop or the real pipeline in ci.yml.
+name: Hello
+
+on:
+  push:                # run on every push, to any branch
+  workflow_dispatch:   # also adds a "Run workflow" button in the Actions tab
+
+jobs:
+  say-hello:
+    runs-on: ubuntu-latest   # GitHub lends a fresh Linux machine for this job
+    steps:
+      # "run" executes a shell command on that machine.
+      - name: Print a greeting
+        run: echo "Hello from GitHub Actions"
+
+      # GitHub sets environment variables that describe the current run.
+      - name: Show information about this run
+        run: |
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Branch:     $GITHUB_REF_NAME"
+          echo "Started by: $GITHUB_ACTOR"
+          echo "Event:      $GITHUB_EVENT_NAME"
+
+      # The machine starts empty: your code is not on it yet.
+      - name: List files before checkout
+        run: ls -la
+
+      # "uses" runs a ready-made action. This one downloads your repository.
+      - name: Download the code
+        uses: actions/checkout@v5
+
+      - name: List files after checkout
+        run: ls -la
