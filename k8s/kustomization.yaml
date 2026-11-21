@@ -1,24 +1,16 @@
+# The local version of the shop, for Kubernetes in Docker Desktop.
 # Deploy everything:   kubectl apply -k k8s
 # Remove everything:   kubectl delete -k k8s
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-# Every resource below is created in this namespace.
-namespace: shop
-
+# All the shared manifests (see base/kustomization.yaml).
 resources:
-  - namespace.yaml
-  - config.yaml
-  - postgres.yaml
-  - redis.yaml
-  - product-service.yaml
-  - cart-service.yaml
-  - order-service.yaml
-  - frontend.yaml
+  - base
 
-# The manifests use short image names. This block maps them to real images.
-# Locally these are the images built by "docker compose build"; the CD
-# pipeline will later point them at the images pushed by GitHub Actions.
+# The manifests use short image names. This block maps them to the images
+# built on your laptop by "docker compose build". The AWS overlay maps the
+# same names to the images pushed by GitHub Actions instead.
 images:
   - name: product-service
     newName: ecommerce-shop/product-service

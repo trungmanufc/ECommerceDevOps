@@ -37,8 +37,11 @@ instance, each with its own table. They never read each other's table.
 ```
 services/<name>/        source code, tests and Dockerfile of each service
 docker-compose.yml      runs everything on one machine
-k8s/                    Kubernetes manifests (applied with kustomize)
+k8s/base/               Kubernetes manifests shared by every environment
+k8s/kustomization.yaml  local version (Docker Desktop), uses locally built images
+k8s/aws/                AWS version (k3s on EC2), uses the images from GHCR
 .github/workflows/      CI pipeline
+docs/                   step-by-step guides
 ```
 
 ## 1. Run with Docker Compose
@@ -122,11 +125,17 @@ git push -u origin main
 
 Then open the **Actions** tab of the repository to watch the pipeline.
 
+## 5. Run on AWS (k3s on one EC2 server)
+
+Follow [docs/aws-k3s.md](docs/aws-k3s.md). In short: launch an Ubuntu
+`t3.small`, install k3s, create the database password as a Secret, and run
+`kubectl apply -k k8s/aws`. The shop is then at `http://<server-ip>`.
+
 ## Roadmap
 
 - [x] Services, Dockerfiles, Docker Compose
 - [x] Kubernetes manifests, running locally
 - [x] CI: test, build and push images
-- [ ] Kubernetes cluster on AWS (k3s on EC2, or EKS)
+- [ ] Kubernetes cluster on AWS: k3s on one EC2 server, deployed by hand (guide ready)
 - [ ] CD: deploy to the cluster from GitHub Actions
 - [ ] Later: Helm, monitoring (Prometheus/Grafana), Ansible, Jenkins

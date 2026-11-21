@@ -11,8 +11,8 @@ data:
   CART_SERVICE_URL: http://cart-service:3000
   PRODUCT_SERVICE_URL: http://product-service:3000
 ---
-# Local-development password only. For AWS this Secret must not live in git:
-# it will be created from AWS Secrets Manager or by the pipeline instead.
+# Local-development password only. The AWS overlay removes this Secret, and
+# the real one is created by hand on the server (see docs/aws-k3s.md).
 apiVersion: v1
 kind: Secret
 metadata:

@@ -36,8 +36,8 @@ spec:
 ---
 # The only Service reachable from outside the cluster. The backend Services
 # are internal (ClusterIP) and are reached through this nginx.
-# Docker Desktop publishes a LoadBalancer on localhost; on AWS the same
-# manifest creates a real load balancer.
+# Docker Desktop publishes a LoadBalancer on localhost; k3s publishes it on
+# the server's own IP address (the AWS overlay changes the port to 80).
 apiVersion: v1
 kind: Service
 metadata:

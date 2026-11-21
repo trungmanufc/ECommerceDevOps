@@ -36,7 +36,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - run: kubectl kustomize k8s > /dev/null
+      - name: Render the local version
+        run: kubectl kustomize k8s > /dev/null
+      - name: Render the AWS version
+        run: kubectl kustomize k8s/aws > /dev/null
 
   # Job 3: build one Docker image per service. Runs only if the tests passed.
   # Pull requests only build; pushes to main also publish the image to the
