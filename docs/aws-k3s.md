@@ -158,6 +158,59 @@ In **EC2 → Instances**, select `microshop`:
 - **Instance state → Terminate**: deletes the server and its disk, including
   the database. Nothing is billed afterwards.
 
+## 8. Deploy automatically from GitHub Actions (CD)
+
+The `deploy` job in `.github/workflows/ci.yml` does the
+[Deploy a new version](#deploy-a-new-version) steps for you after every push
+to `main`: once the tests have passed and the images are built, it logs in
+to the server over SSH and applies the manifests with the commit's exact
+`sha-<commit>` image tags.
+
+```
+push to main → test → build + push images → deploy: ssh ubuntu@server 'kubectl apply' → rollout status
+```
+
+It needs three things, set up once:
+
+**1. Let GitHub's machines reach SSH.** GitHub's runners come from many
+changing IP addresses, so "My IP" blocks them. In **EC2 → Security groups**,
+edit the SSH rule: Source → **Anywhere-IPv4 (0.0.0.0/0)**. This is safe
+enough for a practice server because Ubuntu on EC2 accepts **only key
+logins**, never passwords: without `microshop.pem` nobody gets in. (Tighter
+options, such as AWS Systems Manager with no open port, can come later.)
+
+**2. Give GitHub the key** as a *secret*. In the repository on GitHub:
+**Settings → Secrets and variables → Actions → Secrets → New repository
+secret**:
+
+| Name | Value |
+|---|---|
+| `EC2_SSH_KEY` | The whole content of `microshop.pem`, including the `-----BEGIN` and `-----END` lines |
+
+To copy it in PowerShell: `Get-Content $HOME\.ssh\microshop.pem -Raw | Set-Clipboard`.
+A secret can be used by workflows but never read back, not even by you.
+
+**3. Tell GitHub where the server is** as a *variable* (the IP is not
+secret, so it can show in the logs). Same page, **Variables** tab → **New
+repository variable**:
+
+| Name | Value |
+|---|---|
+| `EC2_HOST` | `<server-ip>`, for example `13.250.10.20` |
+
+Push any commit to `main` and watch the **Actions** tab. The run now has a
+fourth job, **Deploy to AWS**, and the repository page shows a
+**production** environment with a link to the shop.
+
+Notes:
+
+- **The IP changes when you Stop and Start the server.** Update `EC2_HOST`
+  afterwards. While the server is stopped, delete the variable: the deploy
+  job is then skipped instead of failing.
+- Pull requests never deploy. Only `main` does.
+- To check what is running: `kubectl -n shop get deploy -o wide` on the
+  server shows the `sha-<commit>` tag of each image.
+
 ## Troubleshooting
 
 | You see | Meaning | Fix |
@@ -168,3 +221,6 @@ In **EC2 → Instances**, select `microshop`:
 | Pod `ImagePullBackOff` | Image name or tag wrong, or the GHCR package is private | `kubectl -n shop describe pod <name>`, look at Events |
 | Pod `Pending` | Not enough memory on the server | `kubectl describe pod <name>`. Use a bigger instance or fewer replicas |
 | Pods `CrashLoopBackOff` | The app starts, then fails | `kubectl -n shop logs <pod> --previous` |
+| Deploy job: `Host key verification failed` or `Connection timed out` | GitHub cannot reach port 22, or `EC2_HOST` is the old IP | Check the SSH rule is 0.0.0.0/0 and the IP is current |
+| Deploy job: `Permission denied (publickey)` | `EC2_SSH_KEY` is incomplete | Paste the whole `.pem` again, BEGIN and END lines included |
+| Deploy job: `rollout status` times out | The new pods do not become ready | On the server: `kubectl -n shop get pods`, then `describe` / `logs` |

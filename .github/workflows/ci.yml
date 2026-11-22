@@ -89,3 +89,63 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.service }}
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  # Job 4: deploy to the EC2 server (CD). Runs only on pushes to main, only
+  # after every image was built and the manifests are valid, and only once
+  # the repository variable EC2_HOST is set (see docs/aws-k3s.md, section 8).
+  # Delete that variable while the server is stopped and this job is skipped.
+  deploy:
+    name: Deploy to AWS
+    needs: [build, manifests]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.EC2_HOST != ''
+    runs-on: ubuntu-latest
+    # An "environment" shows the deploy history and the shop's link on the
+    # repository page. Later you can add a manual approval to it.
+    environment:
+      name: production
+      url: http://${{ vars.EC2_HOST }}
+    # Never run two deploys at the same time; a newer one waits its turn.
+    concurrency:
+      group: production
+      cancel-in-progress: false
+    env:
+      EC2_HOST: ${{ vars.EC2_HOST }}
+    steps:
+      - uses: actions/checkout@v5
+
+      # Job 3 tagged every image sha-<commit>. Pointing the manifests at that
+      # exact tag (instead of "latest") means Kubernetes sees a change and
+      # rolls out the new pods on its own, and you always know which commit
+      # is running.
+      - name: Use this commit's images
+        run: |
+          sed -i "s/newTag: latest/newTag: sha-${GITHUB_SHA}/" k8s/aws/kustomization.yaml
+          grep newTag k8s/aws/kustomization.yaml
+
+      # The private key comes from the secret EC2_SSH_KEY. GitHub hides it
+      # in the logs. ssh-keyscan records the server's identity so ssh does
+      # not stop to ask "are you sure you want to continue connecting?".
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/microshop.pem
+          chmod 600 ~/.ssh/microshop.pem
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+
+      # Render the manifests here on the runner and pipe them through SSH
+      # to kubectl on the server. The server needs no git checkout.
+      - name: Apply the manifests
+        run: |
+          kubectl kustomize k8s/aws \
+            | ssh -i ~/.ssh/microshop.pem ubuntu@"$EC2_HOST" 'kubectl apply -f -'
+
+      # Wait until the new pods are running and ready. If they never become
+      # ready (a crash, a wrong image), this step fails and the run turns red.
+      - name: Wait for the rollout
+        run: |
+          ssh -i ~/.ssh/microshop.pem ubuntu@"$EC2_HOST" '
+            for d in product-service cart-service order-service frontend; do
+              kubectl -n shop rollout status deploy/$d --timeout=180s || exit 1
+            done'
