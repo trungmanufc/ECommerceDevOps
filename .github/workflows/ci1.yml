@@ -62,4 +62,6 @@ jobs:
           context: services/${{matrix.service}}
           push: ${{github.event_name != 'pull_request'}}
           tags: ${{steps.meta.output.tags}}
-          labels: ${{steps.meta.outputs.labels}}
+          labels: ${{steps.meta.outputs.labels}}          
+          ache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
