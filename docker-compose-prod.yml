@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: shop
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes: 
-      - postgres: /var/lib/postgresql/data
+      - postgres:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U shop -d shop"]
       interval: 5s
@@ -25,20 +25,18 @@ services:
       retries: 5
 
   product-service:
-    build: ./services/product-service
-    image: ghcr.io/trungmanufc/ECommerceDevOps/product-service:${IMAGE_TAG}
+    image: ghcr.io/trungmanufc/ecommercedevops/product-service:${IMAGE_TAG}
     environment:
       PGHOST: postgres
       PGDATABASE: shop
       PGUSER: shop
       PGPASSWORD: ${POSTGRES_PASSWORD}
-    depends on:
+    depends_on:
       database:
-        condition: servic_healthy
+        condition: service_healthy
     
   cart-service:
-    build: ./services/cart-service
-    image: ghcr.io/trungmanufc/ECommerceDevOps/cart-service:${IMAGE_TAG}
+    image: ghcr.io/trungmanufc/ecommercedevops/cart-service:${IMAGE_TAG}
     environment: 
       REDIS_URL: redis://redis:6379
     depends_on:
@@ -46,13 +44,12 @@ services:
         condition: service_healthy
     
   order-service:
-    build: ./services/order-service
-    image: ghcr.io/trungmanufc/ECommerceDevOps/order-service:${IMAGE_TAG}
+    image: ghcr.io/trungmanufc/ecommercedevops/order-service:${IMAGE_TAG}
     environment:
       PGHOST: postgres
       PGDATABASE: shop
       PGUSER: shop
-      PGPASSWORD: shop-local-password
+      PGPASSWORD: ${POSTGRES_PASSWORD}
       CART_SERVICE_URL: http://cart-service:3000
       PRODUCT_SERVICE_URL: http://product-service:3000        
     depends_on:
@@ -60,8 +57,7 @@ services:
         condition: service_healthy
   
   frontend:
-    build: ./services/frontend
-    image: ghcr.io/trungmanufc/ECommerceDevOps/frontend:${IMAGE_TAG}
+    image: ghcr.io/trungmanufc/ecommercedevops/frontend:${IMAGE_TAG}
     ports:
       - "8080:80"
     depends_on:
