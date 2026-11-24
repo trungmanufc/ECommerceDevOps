@@ -80,7 +80,7 @@ jobs:
           ssh-keyscan -H ${{secrets.EC2_HOST}} >> ~/.ssh/known_hosts          
       
       - name: Copy compose file to the server
-        run: scp -i ~/.ssh/key docker-compose.prod.yml ${{secrets.EC2_USER}}@${{secrets.EC2_HOST}}:/opt/shop
+        run: scp -i ~/.ssh/key docker-compose-prod.yml ${{secrets.EC2_USER}}@${{secrets.EC2_HOST}}:/opt/shop
 
       - name: Pull the new images and restart
         run: |
