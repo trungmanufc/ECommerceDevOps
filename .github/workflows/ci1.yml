@@ -62,4 +62,35 @@ jobs:
           context: services/${{matrix.service}}
           push: ${{github.event_name != 'pull_request'}}
           tags: ${{steps.meta.outputs.tags}}
-          labels: ${{steps.meta.outputs.labels}}          
+          labels: ${{steps.meta.outputs.labels}}   
+  
+  deploy:
+    name: Deploy to EC2
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' 
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up ssh
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{secrets.EC2_SSH_KEY}}" > ~/.ssh/key
+          chmod 400 ~/.ssh/key
+          ssh-keyscan -H ${{secrets.EC2_HOST}} >> ~/.ssh/known_hosts          
+      
+      - name: Copy compose file to the server
+        run: scp -i ~/.ssh/key docker-compose.prod.yml ${{secrets.EC2_USER}}@${{secrets.EC2_HOST}}:/opt/shop
+
+      - name: Pull the new images and restart
+        run: |
+          ssh -i ~/.ssh/key ${{secrets.EC2_USER}}@${{secrets.EC2_HOST}} "
+            cd /opt/shop &&
+            export IMAGE_TAG=sha-${{github.sha}} &&
+            docker compose -f docker-compose.prod.yml pull &&
+            docker compose -f docker-compose.prod.yml up -d 
+          "
+
+
+
+

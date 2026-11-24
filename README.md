@@ -1,7 +1,7 @@
 # Microshop: a microservice e-commerce shop
 
 A small online shop built as microservices, used to learn the DevOps toolchain
-step by step: Docker, Kubernetes, GitHub Actions, and later AWS.
+step by step: Docker and GitHub Actions (CI/CD).
 
 ## Architecture
 
@@ -37,11 +37,7 @@ instance, each with its own table. They never read each other's table.
 ```
 services/<name>/        source code, tests and Dockerfile of each service
 docker-compose.yml      runs everything on one machine
-k8s/base/               Kubernetes manifests shared by every environment
-k8s/kustomization.yaml  local version (Docker Desktop), uses locally built images
-k8s/aws/                AWS version (k3s on EC2), uses the images from GHCR
-.github/workflows/      CI pipeline
-docs/                   step-by-step guides
+.github/workflows/      CI/CD pipeline (ci1.yml) and a practice workflow (hello.yml)
 ```
 
 ## 1. Run with Docker Compose
@@ -57,45 +53,7 @@ docker compose down              # stop (add -v to also delete the database)
 
 Open http://localhost:8080
 
-## 2. Run on Kubernetes (Docker Desktop)
-
-Requires Kubernetes to be enabled in Docker Desktop (Settings → Kubernetes).
-The manifests use the images built by Compose, so build them first.
-
-```powershell
-docker compose build             # builds ecommerce-shop/<service>:local
-kubectl apply -k k8s             # create everything in the "shop" namespace
-kubectl -n shop get pods         # wait until all pods are Running and 1/1
-```
-
-Open http://localhost:8081
-
-If that address does not respond on your machine, forward a port instead:
-`kubectl -n shop port-forward svc/frontend 8081:8081`
-
-Things to try, to see what Kubernetes does for you:
-
-```powershell
-# Self-healing: delete a pod and watch a replacement appear
-kubectl -n shop delete pod -l app=cart-service
-kubectl -n shop get pods -w
-
-# Scaling
-kubectl -n shop scale deploy/product-service --replicas=4
-
-# Rolling update after a code change
-docker compose build product-service
-kubectl -n shop rollout restart deploy/product-service
-kubectl -n shop rollout status deploy/product-service
-
-# Logs of all replicas of a service
-kubectl -n shop logs -l app=order-service --tail=50
-
-# Remove everything
-kubectl delete -k k8s
-```
-
-## 3. Run the tests
+## 2. Run the tests
 
 Node.js is not needed on your machine; run the tests in a container:
 
@@ -103,15 +61,15 @@ Node.js is not needed on your machine; run the tests in a container:
 docker run --rm -v "${PWD}\services\order-service:/src:ro" node:24-alpine sh -c "cp -r /src /tmp/app && cd /tmp/app && npm ci && npm test"
 ```
 
-## 4. CI with GitHub Actions
+## 3. CI/CD with GitHub Actions
 
-`.github/workflows/ci.yml` runs on every pull request and every push to `main`:
+`.github/workflows/ci1.yml` runs on every push (any branch) and every pull request:
 
 1. **Test**: `npm ci` and `npm test` for each Node.js service, in parallel.
-2. **Validate**: checks that the Kubernetes manifests render.
-3. **Build**: builds one Docker image per service. On `main` it also pushes
-   them to the GitHub Container Registry as
-   `ghcr.io/<owner>/<repo>/<service>:sha-<commit>` and `:latest`.
+2. **Build**: builds one Docker image per service.
+   On a push (not on pull requests) it also pushes the images to the GitHub
+   Container Registry as `ghcr.io/<owner>/<repo>/<service>:sha-<commit>`,
+   plus `:latest` when the push is on `main`.
 
 To turn it on, push this folder to a GitHub repository:
 
@@ -125,17 +83,9 @@ git push -u origin main
 
 Then open the **Actions** tab of the repository to watch the pipeline.
 
-## 5. Run on AWS (k3s on one EC2 server)
-
-Follow [docs/aws-k3s.md](docs/aws-k3s.md). In short: launch an Ubuntu
-`t3.small`, install k3s, create the database password as a Secret, and run
-`kubectl apply -k k8s/aws`. The shop is then at `http://<server-ip>`.
-
 ## Roadmap
 
 - [x] Services, Dockerfiles, Docker Compose
-- [x] Kubernetes manifests, running locally
-- [x] CI: test, build and push images
-- [ ] Kubernetes cluster on AWS: k3s on one EC2 server, deployed by hand (guide ready)
-- [ ] CD: deploy to the cluster from GitHub Actions
-- [ ] Later: Helm, monitoring (Prometheus/Grafana), Ansible, Jenkins
+- [x] CI: test, build and push images to GHCR
+- [ ] CD: deploy the images from GitHub Actions
+- [ ] Later: Kubernetes, AWS, monitoring (Prometheus/Grafana), Ansible, Jenkins

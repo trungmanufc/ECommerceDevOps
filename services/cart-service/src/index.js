@@ -13,8 +13,8 @@ async function main() {
     console.log(`cart-service listening on port ${PORT}`);
   });
 
-  // Kubernetes sends SIGTERM before removing a pod: finish in-flight requests,
-  // then exit.
+  // Docker sends SIGTERM when stopping a container (docker stop / compose down):
+  // finish in-flight requests, then exit.
   const shutdown = () => server.close(() => store.close().finally(() => process.exit(0)));
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);

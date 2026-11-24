@@ -1,0 +1,73 @@
+name: ecommerce-shop
+
+services:
+  database:
+    image: postgres:19-alpine
+    restart: always
+    environment: 
+      POSTGRES_DB: shop
+      POSTGRES_USER: shop
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes: 
+      - postgres: /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shop -d shop"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:8-alpine
+    healthcheck: 
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  product-service:
+    build: ./services/product-service
+    image: ghcr.io/trungmanufc/ECommerceDevOps/product-service:${IMAGE.TAG}
+    environment:
+      PGHOST: postgres
+      PGDATABASE: shop
+      PGUSER: shop
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    depends on:
+      database:
+        condition: servic_healthy
+    
+  cart-service:
+    build: ./services/cart-service
+    image: ghcr.io/trungmanufc/ECommerceDevOps/cart-service:${IMAGE.TAG}
+    environment: 
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    
+  order-service:
+    build: ./services/order-service
+    image: ghcr.io/trungmanufc/ECommerceDevOps/order-service:${IMAGE.TAG}
+    environment:
+      PGHOST: postgres
+      PGDATABASE: shop
+      PGUSER: shop
+      PGPASSWORD: shop-local-password
+      CART_SERVICE_URL: http://cart-service:3000
+      PRODUCT_SERVICE_URL: http://product-service:3000        
+    depends_on:
+      database:
+        condition: service_healthy
+  
+  frontend:
+    build: ./services/frontend
+    image: ghcr.io/trungmanufc/ECommerceDevOps/frontend:${IMAGE.TAG}
+    ports:
+      - "8080:80"
+    depends_on:
+      - product-service
+      - order-service
+      - cart-service
+
+volumes:
+  postgres:
