@@ -29,7 +29,7 @@ services:
     image: ghcr.io/${IMAGE_REPO}/product-service:${IMAGE_TAG}
     restart: unless-stopped
     environment:
-      PGHOST: database
+      PGHOST: postgres
       PGDATABASE: shop
       PGUSER: shop
       PGPASSWORD: ${POSTGRES_PASSWORD}
@@ -50,7 +50,7 @@ services:
     image: ghcr.io/${IMAGE_REPO}/order-service:${IMAGE_TAG}
     restart: unless-stopped
     environment:
-      PGHOST: database
+      PGHOST: postgres
       PGDATABASE: shop
       PGUSER: shop
       PGPASSWORD: ${POSTGRES_PASSWORD}
