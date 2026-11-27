@@ -33,7 +33,7 @@ Make a SSH connection to the instance and:
 1. Install Docker and the Compose plugin. 
 2. Create a folder for the app: sudo mkdir -p shop && sudo chown $USER shop
 3. Create shop/.env with the real database password. 
-4. Open or create a new security group for port 22 (SSH) and port 8080 (the frontend), or whichever port we map the frontend to.
+4. Open or create a new security group for port 22 (SSH) and port 9000 (the frontend), or whichever port we map the frontend to.
 5. Attach an Elastic IP to the EC2 instance. Without this step, it can be difficult to reach the server consistently because whenever the instance restarts, its IP address changes.
 
 Add secrets in Github:
@@ -80,6 +80,7 @@ git push -u origin main
 
 Then open the **Actions** tab of the repository to watch the pipeline.
 
+After the deployment process, the server can be accessed from <your-elastic-IP>:9000.
 ## Roadmap
 
 - [x] Services, Dockerfiles, Docker Compose
