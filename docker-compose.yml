@@ -1,5 +1,4 @@
 # Runs the whole shop on one machine:  docker compose up --build
-# Then open http://localhost:8080
 name: ecommerce-shop
 
 services:
@@ -64,7 +63,7 @@ services:
     build: ./services/frontend
     image: ecommerce-shop/frontend:local
     ports:
-      - "8080:80"
+      - "9000:80"
     depends_on:
       - product-service
       - cart-service

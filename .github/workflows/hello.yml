@@ -1,5 +1,5 @@
 # A practice workflow for learning GitHub Actions. Safe to edit, break and
-# delete: it does not affect the shop or the real pipeline in ci.yml.
+# delete: it does not affect the shop or the real pipeline in ci1.yml.
 name: Hello
 
 on:
