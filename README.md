@@ -80,7 +80,7 @@ git push -u origin main
 
 Then open the **Actions** tab of the repository to watch the pipeline.
 
-After the deployment process, the server can be accessed from <your-elastic-IP>:9000.
+After the deployment process, the server can be accessed from your-elastic-IP:9000.
 ## Roadmap
 
 - [x] Services, Dockerfiles, Docker Compose
