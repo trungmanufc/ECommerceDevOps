@@ -65,6 +65,8 @@ Open http://localhost:9000
    On a push (not on pull requests) it also pushes the images to the GitHub
    Container Registry as `ghcr.io/<owner>/<repo>/<service>:sha-<commit>`,
    plus `:latest` when the push is on `main`.
+3. **Deploy**: Set up SSH connection to the AWS EC2 instance, copy the docker
+   compose file to the server, pull the new images and restart the application on the instance. 
 
 To turn it on, push this folder to a GitHub repository:
 
