@@ -1,7 +1,7 @@
 name: ecommerce-shop
 
 services:
-  postgres:
+  database:
     image: postgres:19-alpine
     restart: unless-stopped
     environment: 
@@ -26,19 +26,19 @@ services:
       retries: 5
 
   product-service:
-    image: ghcr.io/trungmanufc/ecommercedevops/product-service:${IMAGE_TAG}
+    image: ghcr.io/${IMAGE_REPO}/product-service:${IMAGE_TAG}
     restart: unless-stopped
     environment:
-      PGHOST: postgres
+      PGHOST: database
       PGDATABASE: shop
       PGUSER: shop
       PGPASSWORD: ${POSTGRES_PASSWORD}
     depends_on:
-      postgres:
+      database:
         condition: service_healthy
 
   cart-service:
-    image: ghcr.io/trungmanufc/ecommercedevops/cart-service:${IMAGE_TAG}
+    image: ghcr.io/${IMAGE_REPO}/cart-service:${IMAGE_TAG}
     restart: unless-stopped
     environment:
       REDIS_URL: redis://redis:6379
@@ -47,24 +47,24 @@ services:
         condition: service_healthy
     
   order-service:
-    image: ghcr.io/trungmanufc/ecommercedevops/order-service:${IMAGE_TAG}
+    image: ghcr.io/${IMAGE_REPO}/order-service:${IMAGE_TAG}
     restart: unless-stopped
     environment:
-      PGHOST: postgres
+      PGHOST: database
       PGDATABASE: shop
       PGUSER: shop
       PGPASSWORD: ${POSTGRES_PASSWORD}
       CART_SERVICE_URL: http://cart-service:3000
       PRODUCT_SERVICE_URL: http://product-service:3000
     depends_on:
-      postgres:
+      database:
         condition: service_healthy
   
   frontend:
-    image: ghcr.io/trungmanufc/ecommercedevops/frontend:${IMAGE_TAG}
+    image: ghcr.io/${IMAGE_REPO}/frontend:${IMAGE_TAG}
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "9000:80"
     depends_on:
       - product-service
       - order-service
